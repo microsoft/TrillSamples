@@ -41,16 +41,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.StreamProcessing, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0695e91d4f0d7afa, processorArchitecture=MSIL">
-      <HintPath>..\packages\Trill.2018.2.23.1\lib\net45\Microsoft.StreamProcessing.dll</HintPath>
+      <HintPath>..\packages\Trill.2018.3.1.4\lib\net45\Microsoft.StreamProcessing.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.StreamProcessing.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0695e91d4f0d7afa, processorArchitecture=MSIL">
-      <HintPath>..\packages\Trill.2018.2.23.1\lib\net45\Microsoft.StreamProcessing.Common.dll</HintPath>
+      <HintPath>..\packages\Trill.2018.3.1.4\lib\net45\Microsoft.StreamProcessing.Common.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.StreamProcessing.Serializer, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0695e91d4f0d7afa, processorArchitecture=MSIL">
-      <HintPath>..\packages\Trill.2018.2.23.1\lib\net45\Microsoft.StreamProcessing.Serializer.dll</HintPath>
+      <HintPath>..\packages\Trill.2018.3.1.4\lib\net45\Microsoft.StreamProcessing.Serializer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Reactive.Core">
       <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
     </Reference>
