@@ -17,7 +17,7 @@ The samples right here are a great way to start, they will download the Trill bi
 - A Data Engineering Bulletin [article](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/trill-debull.pdf) on Trill.
 - The [Trill technical report](http://research.microsoft.com/pubs/214609/trill-TR.pdf).
 - The Trill project website [website](https://www.microsoft.com/en-us/research/project/trill/).
-- Trill API documentation can be browsed[here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.streamprocessing?view=Trill-2018.3.2.1).
+- Trill API documentation can be browsed [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.streamprocessing?view=Trill-2018.3.2.1).
 - A more detailed user guide will be posted soon.
 
 # Contributing
