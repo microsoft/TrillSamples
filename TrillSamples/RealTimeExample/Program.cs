@@ -11,6 +11,8 @@ namespace RealTimeExample
 
         static void Main(string[] args)
         {
+            Config.ForceRowBasedExecution = true;
+
             // Poll performance counter 4 times a second
             TimeSpan pollingInterval = TimeSpan.FromSeconds(0.25);
 
