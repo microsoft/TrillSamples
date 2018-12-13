@@ -40,20 +40,20 @@ namespace RulesEngine
 
     public static class Class1
     {
-        internal static IStreamable<PartitionKey<TRulesKey>, Tuple<string, TOutput>> RulesEngine<TRulesKey, TInput, TData, TOutput>(
+        internal static IStreamable<PartitionKey<TRulesKey>, ValueTuple<string, TOutput>> RulesEngine<TRulesKey, TInput, TData, TOutput>(
             IStreamable<Empty, TInput> streamable,
             Func<TInput, IEnumerable<TRulesKey>> ruleAssignment,
             Func<TRulesKey, long, long> startEdgeFunction,
             Func<TRulesKey, long, long> durationFunction,
             Func<TInput, TData> dataSelector,
-            Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<Tuple<string, TOutput>>> aggregator,
+            Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<ValueTuple<string, TOutput>>> aggregator,
             long punctuationLag)
         {
             return streamable
-                .SelectMany((input) => ruleAssignment(input).Select(key => Tuple.Create(key, input)))
+                .SelectMany((input) => ruleAssignment(input).Select(key => ValueTuple.Create(key, input)))
                 .Partition(tuple => tuple.Item1, punctuationLag)
                 .AlterEventLifetime((p, s) => startEdgeFunction(p, s), (p, s, e) => durationFunction(p, s))
-                .Select(o => Tuple.Create(o.Item1, dataSelector(o.Item2)))
+                .Select(o => ValueTuple.Create(o.Item1, dataSelector(o.Item2)))
                 .GroupAggregate(o => o.Item1, w => new RulesAggregate<TRulesKey, TData, TOutput>(aggregator), (g, i) => i)
                 .SelectMany(o => o);
         }
@@ -71,18 +71,18 @@ namespace RulesEngine
             return SnapToLeftBoundary(startTime + period - 1, period);
         }
 
-        private static IEnumerable<StreamEvent<Tuple<string, int>>> GetStreamEvents()
+        private static IEnumerable<StreamEvent<ValueTuple<string, int>>> GetStreamEvents()
         {
             foreach (var i in Enumerable.Range(0, 100000))
             {
-                yield return StreamEvent.CreatePoint((i / 1000) * 1000, Tuple.Create("Device" + (i % 10), i / 100 * 100));
+                yield return StreamEvent.CreatePoint((i / 1000) * 1000, ValueTuple.Create("Device" + (i % 10), i / 100 * 100));
             }
         }
 
-        private static IObservable<StreamEvent<Tuple<string, int>>> GetObservable()
-            => new TestObservable<StreamEvent<Tuple<string, int>>>(GetStreamEvents());
+        private static IObservable<StreamEvent<ValueTuple<string, int>>> GetObservable()
+            => new TestObservable<StreamEvent<ValueTuple<string, int>>>(GetStreamEvents());
 
-        private static IEnumerable<string> AssignRules(Tuple<string, int> tuple)
+        private static IEnumerable<string> AssignRules(ValueTuple<string, int> tuple)
         {
             if (tuple.Item1 == "Device5") return new[] { "A" };
             if (tuple.Item1 == "Device8") return new[] { "B" };
@@ -118,21 +118,32 @@ namespace RulesEngine
             throw new InvalidOperationException();
         }
 
-        private static IEnumerable<Tuple<string, int>> ComputeResult(string ruleKey, SortedMultiSet<int> state)
+        private static IEnumerable<ValueTuple<string, int>> ComputeResult(string ruleKey, SortedMultiSet<int> state)
         {
             switch (ruleKey)
             {
                 case "A":
                     // For rule A, assume we want a maximum and a minimum
-                    return new Tuple<string, int>[] { Tuple.Create("Max", state.Last()), Tuple.Create("Min", state.First()) };
+                    return new ValueTuple<string, int>[]
+                    {
+                        ValueTuple.Create("Max", state.Last()),
+                        ValueTuple.Create("Min", state.First())
+                    };
 
                 case "B":
                     // For rule B, assume a count and a count distinct
-                    return new Tuple<string, int>[] { Tuple.Create("Count", (int)state.TotalCount), Tuple.Create("Distinct", (int)state.UniqueCount) };
+                    return new ValueTuple<string, int>[]
+                    {
+                        ValueTuple.Create("Count", (int)state.TotalCount),
+                        ValueTuple.Create("Distinct", (int)state.UniqueCount)
+                    };
 
                 case "F":
                     // For rule F, assume a sum
-                    return new Tuple<string, int>[] { Tuple.Create("Sum", state.GetEnumerable().Sum()) };
+                    return new ValueTuple<string, int>[]
+                    {
+                        ValueTuple.Create("Sum", state.GetEnumerable().Sum())
+                    };
             }
             throw new InvalidOperationException();
         }
@@ -147,7 +158,7 @@ namespace RulesEngine
                 t => t.Item2,
                 ComputeResult,
                 0);
-            var observer = new TestObserver<PartitionedStreamEvent<string, Tuple<string, int>>>(
+            var observer = new TestObserver<PartitionedStreamEvent<string, ValueTuple<string, int>>>(
                 rulesEngine.ToStreamEventObservable());
         }
     }

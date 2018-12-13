@@ -14,7 +14,7 @@ using Microsoft.StreamProcessing;
 namespace JoinExamples
 {
 
-    public class Program
+    public sealed class Program
     {
         public struct Session
         {

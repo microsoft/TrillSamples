@@ -10,7 +10,7 @@ using Microsoft.StreamProcessing;
 
 namespace QueryWritingGuide
 {
-    public class Program
+    public sealed class Program
     {
         private struct ContextSwitch
         {

@@ -11,40 +11,40 @@ using Microsoft.StreamProcessing.Aggregates;
 namespace RulesEngine
 {
     internal sealed class RulesAggregate<TRulesKey, TData, TOutput> :
-        IAggregate<Tuple<TRulesKey, TData>, Tuple<TRulesKey, SortedMultiSet<TData>>, IEnumerable<Tuple<string, TOutput>>>
+        IAggregate<ValueTuple<TRulesKey, TData>, ValueTuple<TRulesKey, SortedMultiSet<TData>>, IEnumerable<ValueTuple<string, TOutput>>>
     {
-        private readonly Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<Tuple<string, TOutput>>> func;
+        private readonly Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<ValueTuple<string, TOutput>>> func;
 
-        public RulesAggregate(Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<Tuple<string, TOutput>>> func)
+        public RulesAggregate(Func<TRulesKey, SortedMultiSet<TData>, IEnumerable<ValueTuple<string, TOutput>>> func)
             => this.func = func;
 
         public Expression<Func<
-            Tuple<TRulesKey, SortedMultiSet<TData>>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>,
             long,
-            Tuple<TRulesKey, TData>,
-            Tuple<TRulesKey, SortedMultiSet<TData>>>> Accumulate()
-            => (state, time, input) => Tuple.Create(input.Item1, state.Item2.Add(input.Item2));
+            ValueTuple<TRulesKey, TData>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>>> Accumulate()
+            => (state, time, input) => ValueTuple.Create(input.Item1, state.Item2.Add(input.Item2));
 
         public Expression<Func<
-            Tuple<TRulesKey, SortedMultiSet<TData>>,
-            IEnumerable<Tuple<string, TOutput>>>> ComputeResult()
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>,
+            IEnumerable<ValueTuple<string, TOutput>>>> ComputeResult()
             => (state) => this.func(state.Item1, state.Item2);
 
         public Expression<Func<
-            Tuple<TRulesKey, SortedMultiSet<TData>>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>,
             long,
-            Tuple<TRulesKey, TData>,
-            Tuple<TRulesKey, SortedMultiSet<TData>>>> Deaccumulate()
-            => (state, time, input) => Tuple.Create(input.Item1, state.Item2.Remove(input.Item2));
+            ValueTuple<TRulesKey, TData>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>>> Deaccumulate()
+            => (state, time, input) => ValueTuple.Create(input.Item1, state.Item2.Remove(input.Item2));
 
         public Expression<Func<
-            Tuple<TRulesKey, SortedMultiSet<TData>>,
-            Tuple<TRulesKey, SortedMultiSet<TData>>,
-            Tuple<TRulesKey, SortedMultiSet<TData>>>> Difference()
-            => (left, right) => Tuple.Create(left.Item1, left.Item2.RemoveAll(right.Item2));
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>,
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>>> Difference()
+            => (left, right) => ValueTuple.Create(left.Item1, left.Item2.RemoveAll(right.Item2));
 
         public Expression<Func<
-            Tuple<TRulesKey, SortedMultiSet<TData>>>> InitialState()
-            => () => Tuple.Create(default(TRulesKey), new SortedMultiSet<TData>());
+            ValueTuple<TRulesKey, SortedMultiSet<TData>>>> InitialState()
+            => () => ValueTuple.Create(default(TRulesKey), new SortedMultiSet<TData>());
     }
 }

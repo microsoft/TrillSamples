@@ -27,7 +27,7 @@ namespace HelloToll
         }
     }
 
-    internal class Toll
+    internal sealed class Toll
     {
         public string TollId { get; set; }
         public double TollAmount { get; set; }
@@ -49,7 +49,7 @@ namespace HelloToll
         }
     }
 
-    internal class TollAverage
+    internal sealed class TollAverage
     {
         public string TollId { get; set; }
         public double AverageToll { get; set; }
@@ -60,7 +60,7 @@ namespace HelloToll
         }
     }
 
-    internal class TollCompare
+    internal sealed class TollCompare
     {
         public string TollId1 { get; set; }
         public string TollId2 { get; set; }
@@ -72,7 +72,7 @@ namespace HelloToll
         }
     }
 
-    internal class TopEvents
+    internal sealed class TopEvents
     {
         public int TollRank { get; set; }
         public string TollId { get; set; }
@@ -85,7 +85,7 @@ namespace HelloToll
         }
     }
 
-    internal class AccountInfo
+    internal sealed class AccountInfo
     {
         public string AccountId { get; set; }
         public string Name { get; set; }
@@ -100,7 +100,7 @@ namespace HelloToll
         }
     }
 
-    internal class TollViolation
+    internal sealed class TollViolation
     {
         public string TollId { get; set; }
         public string LicensePlate { get; set; }
@@ -117,7 +117,7 @@ namespace HelloToll
         }
     }
 
-    internal class TollOuterJoin
+    internal sealed class TollOuterJoin
     {
         public string LicensePlate { get; set; }
         public string Make { get; set; }
@@ -132,7 +132,7 @@ namespace HelloToll
         }
     }
 
-    internal class VehicleWeightInfo
+    internal sealed class VehicleWeightInfo
     {
         public string LicensePlate { get; set; }
         public double? Weight { get; set; }

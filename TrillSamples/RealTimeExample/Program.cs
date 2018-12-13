@@ -9,12 +9,12 @@ using Microsoft.StreamProcessing;
 
 namespace RealTimeExample
 {
-    public class Program
+    public sealed class Program
     {
         public static void Main(string[] args)
         {
             // Poll performance counter 4 times a second
-            TimeSpan pollingInterval = TimeSpan.FromSeconds(0.25);
+            var pollingInterval = TimeSpan.FromSeconds(0.25);
 
             // Take the total processor utilization performance counter
             string categoryName = "Processor";
@@ -22,12 +22,17 @@ namespace RealTimeExample
             string instanceName = "_Total";
 
             // Create an observable that feeds the performance counter periodically
-            IObservable<PerformanceCounterSample> source = new PerformanceCounterObservable(categoryName, counterName, instanceName, pollingInterval);
+            IObservable<PerformanceCounterSample> source =
+                new PerformanceCounterObservable(categoryName, counterName, instanceName, pollingInterval);
 
-            // Load the observable as a stream in Trill
+            // Load the observable as a stream in Trill, injecting a punctuation every second. Because we use
+            // FlushPolicy.FlushOnPunctuation, this will also flush the data every second.
             var inputStream =
-                source.Select(e => StreamEvent.CreateStart(e.StartTime.Ticks, e)) // Create an IObservable of StreamEvent<>
-                .ToStreamable(null, FlushPolicy.FlushOnPunctuation, null, OnCompletedPolicy.Flush);
+                source.Select(e => StreamEvent.CreateStart(e.StartTime.Ticks, e))
+                .ToStreamable(
+                    null,
+                    FlushPolicy.FlushOnPunctuation,
+                    PeriodicPunctuationPolicy.Time((ulong)TimeSpan.FromSeconds(1).Ticks));
 
             // The query
             long windowSize = TimeSpan.FromSeconds(2).Ticks;
@@ -39,29 +44,15 @@ namespace RealTimeExample
 
         private static void WriteEvent<T>(StreamEvent<T> e)
         {
-            if (e.IsInterval)
+            if (e.IsData)
             {
-                Console.WriteLine(
-                    "Event Kind=Interval\tStart Time={0}\tEnd Time={1}\tPayload={2}",
-                    e.StartTime, e.EndTime, e.Payload);
+                Console.WriteLine($"EventKind = {e.Kind, 8}\t" +
+                    $"StartTime = {e.StartTime, 4}\tEndTime = {e.EndTime, 20}\t" +
+                    $"Payload = ( {e.Payload.ToString()} )");
             }
-            else if (e.IsStart)
+            else // IsPunctuation
             {
-                Console.WriteLine(
-                    "Event Kind=Start\tStart Time={0}\tEnd Time=????\tPayload={1}",
-                    e.StartTime, e.Payload);
-            }
-            else if (e.IsEnd)
-            {
-                Console.WriteLine(
-                    "Event Kind=End\t\tStart Time={0}\tEnd Time={1}\tPayload={2}",
-                    e.StartTime, e.EndTime, e.Payload);
-            }
-            else // Is a punctuation
-            {
-                Console.WriteLine(
-                  "Event Kind=Punctuation\tSync Time={0}",
-                  e.StartTime);
+                Console.WriteLine($"EventKind = {e.Kind}\tSyncTime  = {e.StartTime, 4}");
             }
         }
     }

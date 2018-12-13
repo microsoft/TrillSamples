@@ -14,8 +14,7 @@ using Microsoft.StreamProcessing;
 
 namespace StatelessExamples
 {
-
-    public class Program
+    public sealed class Program
     {
         public struct Point
         {
@@ -37,7 +36,15 @@ namespace StatelessExamples
             public int x;
             public int y;
             public int z;
-            public string w;
+
+            public override string ToString() => $" {{x:{this.x}, y:{this.y}, z:{this.z}}}";
+        }
+
+        public struct Point3DRefTypes
+        {
+            public string x;
+            public string y;
+            public string z;
 
             public override string ToString() => $" {{x:{this.x}, y:{this.y}, z:{this.z}}}";
         }
@@ -56,8 +63,8 @@ namespace StatelessExamples
                 StreamEvent.CreatePunctuation<Point>(StreamEvent.InfinitySyncTime)
         };
 
-        [DisplayName("WhereExample1")]
-        private static void WhereExample1()
+        [DisplayName("WhereExampleSingleField")]
+        private static void WhereExampleSingleField()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -73,38 +80,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("WhereExample10")]
-        private static void WhereExample10()
-        {
-             StreamEvent<ValueTuple<int, int>>[] values2 =
-             {
-                StreamEvent.CreateInterval(1, 10, new ValueTuple<int, int> { Item1 = 1, Item2 = 2 }),
-                StreamEvent.CreateInterval(2, 10, new ValueTuple<int, int> { Item1 = 2, Item2 = 4 }),
-                StreamEvent.CreateInterval(3, 10, new ValueTuple<int, int> { Item1 = 3, Item2 = 6 }),
-                StreamEvent.CreateInterval(4, 10, new ValueTuple<int, int> { Item1 = 4, Item2 = 8 }),
-                StreamEvent.CreateInterval(5, 10, new ValueTuple<int, int> { Item1 = 5, Item2 = 10 }),
-                StreamEvent.CreateInterval(6, 10, new ValueTuple<int, int> { Item1 = 6, Item2 = 12 }),
-                StreamEvent.CreateInterval(7, 10, new ValueTuple<int, int> { Item1 = 7, Item2 = 14 }),
-                StreamEvent.CreateInterval(8, 10, new ValueTuple<int, int> { Item1 = 8, Item2 = 16 }),
-                StreamEvent.CreateInterval(9, 10, new ValueTuple<int, int> { Item1 = 9, Item2 = 18 }),
-        };
-
-        var input = values2.ToObservable().ToStreamable();
-            Console.WriteLine("Input =");
-            input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
-
-            // Apply a filter on one field.
-            Console.WriteLine();
-            Console.WriteLine("Query: input.Where(p => p.x > 5)");
-            var output = input.Where(p => p.Item1 > 5);
-
-            Console.WriteLine();
-            Console.WriteLine("Output =");
-            output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
-        }
-
-        [DisplayName("WhereExample2")]
-        private static void WhereExample2()
+        [DisplayName("WhereExampleCorrelatedFields")]
+        private static void WhereExampleCorrelatedFields()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -120,8 +97,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("SelectExample1")]
-        private static void SelectExample1()
+        [DisplayName("SelectExampleFieldExtraction")]
+        private static void SelectExampleFieldExtraction()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -137,8 +114,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("SelectExample2")]
-        private static void SelectExample2()
+        [DisplayName("SelectExampleAnonymousType")]
+        private static void SelectExampleAnonymousType()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -155,8 +132,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("SelectExample3")]
-        private static void SelectExample3()
+        [DisplayName("SelectExampleAutomaticFieldExtraction")]
+        private static void SelectExampleAutomaticFieldExtraction()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -173,8 +150,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("SelectExample4")]
-        private static void SelectExample4()
+        [DisplayName("SelectExampleNewFields")]
+        private static void SelectExampleNewFields()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -190,8 +167,8 @@ namespace StatelessExamples
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
         }
 
-        [DisplayName("SelectExample5")]
-        private static void SelectExample5()
+        [DisplayName("SelectExampleColumnAdjustment")]
+        private static void SelectExampleColumnAdjustment()
         {
             var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
@@ -200,7 +177,9 @@ namespace StatelessExamples
             Console.WriteLine();
             Console.WriteLine("Query: input.Select(() => new Point3D(), new Dictionary{{\"y\", p => p.y * 2 }, {\"z\", p => p.x + p.y }})");
             // Map each Point object to a Point3D object by extracting the field x, updating the field y, and adding a new field z.
-            var output = input.Select(() => new Point3D(), new Dictionary<string, Expression<Func<Point, object>>>
+            var output = input.Select(
+                () => new Point3D(),
+                new Dictionary<string, Expression<Func<Point, object>>>
                 {
                     { "y", p => p.y * 2 },
                     { "z", p => p.x + p.y }

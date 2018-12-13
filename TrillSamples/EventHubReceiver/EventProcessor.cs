@@ -20,7 +20,7 @@ namespace EventHubReceiver
     /// <summary>
     /// Event processor for Trill query with state
     /// </summary>
-    public class EventProcessor : IEventProcessor
+    public sealed class EventProcessor : IEventProcessor
     {
         private static readonly TimeSpan CheckpointInterval = TimeSpan.FromSeconds(10);
         private static readonly string StorageConnectionString = Program.StorageConnectionString;
@@ -117,7 +117,6 @@ namespace EventHubReceiver
                 lastSeq = eventData.SystemProperties.SequenceNumber;
                 this.input.OnNext(message);
             }
-
 
             if (this.checkpointStopWatch.Elapsed > TimeSpan.FromSeconds(10))
             {

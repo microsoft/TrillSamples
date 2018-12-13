@@ -13,7 +13,7 @@ using Microsoft.StreamProcessing;
 namespace IngressEgressExamples
 {
 
-    public class Program
+    public sealed class Program
     {
         private struct Point
         {

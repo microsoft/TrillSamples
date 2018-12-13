@@ -28,7 +28,7 @@ namespace AggregateExample
         public long SumSquared;
     }
 
-    internal class StandardDeviationAggregate : IAggregate<int, StandardDeviationState, double>
+    internal sealed class StandardDeviationAggregate : IAggregate<int, StandardDeviationState, double>
     {
         public Expression<Func<StandardDeviationState>> InitialState()
         {

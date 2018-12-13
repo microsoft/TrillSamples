@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToyExample", "ToyExample\ToyExample.csproj", "{5286FA7E-E8C1-4912-813C-1551C0735FF9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWorld", "HelloWorld\HelloWorld.csproj", "{1B1C6FD5-86E3-4E35-A3C6-3E8968ECB9BD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloToll", "HelloToll\HelloToll.csproj", "{ACC12A8F-A608-4DA5-96A1-C05884E2C709}"
@@ -54,14 +52,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Debug|x64.Build.0 = Debug|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Release|x64.ActiveCfg = Release|Any CPU
-		{5286FA7E-E8C1-4912-813C-1551C0735FF9}.Release|x64.Build.0 = Release|Any CPU
 		{1B1C6FD5-86E3-4E35-A3C6-3E8968ECB9BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1B1C6FD5-86E3-4E35-A3C6-3E8968ECB9BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B1C6FD5-86E3-4E35-A3C6-3E8968ECB9BD}.Debug|x64.ActiveCfg = Debug|Any CPU

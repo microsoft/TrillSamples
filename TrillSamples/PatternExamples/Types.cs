@@ -14,9 +14,8 @@ namespace PatternExamples
         public override string ToString() => new { this.Field1, this.Field2 }.ToString();
     }
 
-    internal class FList<T> : List<T>
+    internal sealed class FList<T> : List<T>
     {
-
         public FList<T> FAdd(T t)
         {
             var ret = new FList<T>();

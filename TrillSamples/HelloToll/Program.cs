@@ -12,7 +12,7 @@ using Microsoft.StreamProcessing;
 
 namespace HelloToll
 {
-    public class Program
+    public sealed class Program
     {
         [DisplayName("Pass-through")]
         [Description("Pass-through query to just show input stream in the same form as we show output.")]

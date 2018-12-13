@@ -9,7 +9,7 @@ using Microsoft.Azure.EventHubs.Processor;
 
 namespace EventHubReceiver
 {
-    public class Program
+    public sealed class Program
     {
         private const string EventHubConnectionString = "<fill>";
         private const string EventHubName = "<fill>";

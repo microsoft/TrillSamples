@@ -10,7 +10,7 @@ using Microsoft.StreamProcessing;
 namespace HelloWorld
 {
     // Input events to imitate sensor readings
-    internal class SensorReading
+    internal sealed class SensorReading
     {
         public int Time { get; set; }
 
@@ -24,7 +24,7 @@ namespace HelloWorld
         public override int GetHashCode() => this.Time.GetHashCode() ^ this.Value.GetHashCode();
     }
 
-    public class Program
+    public sealed class Program
     {
         public static void Main(string[] args)
         {
@@ -120,7 +120,7 @@ namespace HelloWorld
             return HistoricData
                 .ToObservable()
                 .Select(r => StreamEvent.CreateInterval(r.Time, r.Time + 1, r))
-                .ToStreamable(null, FlushPolicy.FlushOnPunctuation, null, OnCompletedPolicy.None);
+                .ToStreamable();
         }
     }
 }

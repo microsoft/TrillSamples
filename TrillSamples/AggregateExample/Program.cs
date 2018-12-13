@@ -9,7 +9,7 @@ using Microsoft.StreamProcessing;
 
 namespace AggregateExample
 {
-    public class Program
+    public sealed class Program
     {
         private static readonly StreamEvent<int>[] values =
         {

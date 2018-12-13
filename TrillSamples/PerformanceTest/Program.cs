@@ -79,8 +79,8 @@ namespace PerformanceTest
 
             sw0.Stop();
             Console.WriteLine("Time to load cache with {0} tuples: {1} sec", TotalInputEvents, sw0.Elapsed);
+            Console.WriteLine("Press <ENTER> to continue");
             Console.ReadLine();
-
 
             Console.WriteLine("\n**** Queries over dataset with tumbling windows ****");
             ProcessQuery(tumblingWindowDataset.Where(e => e.field1 != 0), "input.Where(e => e.field1 != 0)");
@@ -137,7 +137,5 @@ namespace PerformanceTest
                 }
             }
         }
-
-
     }
 }

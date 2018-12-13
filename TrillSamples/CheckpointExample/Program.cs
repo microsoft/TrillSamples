@@ -16,16 +16,13 @@ namespace CheckpointExample
     {
         public static void Main(string[] args)
         {
-            // This version of checkpointing works only with row-oriented mode. This restriction will eventually be relaxed.
-            Config.ForceRowBasedExecution = true;
-
             // Subjects to feed pre- and post-checkpoint data to the query
-            var preCheckpointSubject = new Subject<StreamEvent<Tuple<int, int>>>();
-            var postCheckpointSubject = new Subject<StreamEvent<Tuple<int, int>>>();
+            var preCheckpointSubject = new Subject<StreamEvent<ValueTuple<int, int>>>();
+            var postCheckpointSubject = new Subject<StreamEvent<ValueTuple<int, int>>>();
 
             // Outputs of queries with and without checkpointing
-            var outputListWithCheckpoint = new List<Tuple<int, ulong>>();
-            var outputListWithoutCheckpoint = new List<Tuple<int, ulong>>();
+            var outputListWithCheckpoint = new List<ValueTuple<int, ulong>>();
+            var outputListWithoutCheckpoint = new List<ValueTuple<int, ulong>>();
 
             // Containers are an abstraction to hold queries and are the unit of checkpointing
             var container1 = new QueryContainer();
@@ -38,28 +35,32 @@ namespace CheckpointExample
             // Input data: first half of the dataset before a checkpoint is taken
             var preCheckpointData = Enumerable.Range(0, 10000).ToList()
                 .ToObservable()
-                .Select(e => StreamEvent.CreateStart(e, Tuple.Create(e % 10, e)));
+                .Select(e => StreamEvent.CreateStart(e, ValueTuple.Create(e % 10, e)));
 
             // Input data: second half of the dataset after a checkpoint is taken
             var postCheckpointData = Enumerable.Range(10000, 10000).ToList()
                 .ToObservable()
-                .Select(e => StreamEvent.CreateStart(e, Tuple.Create(e % 10, e)));
+                .Select(e => StreamEvent.CreateStart(e, ValueTuple.Create(e % 10, e)));
 
             // For comparison, we run the same query directly on the full dataset
             var fullData = Enumerable.Range(0, 20000).ToList()
                 .ToObservable()
-                .Select(e => StreamEvent.CreateStart(e, Tuple.Create(e % 10, e)));
+                .Select(e => StreamEvent.CreateStart(e, ValueTuple.Create(e % 10, e)));
 
             // Query 1: Run with first half of the dataset, then take a checkpoint
             var input1 = container1.RegisterInput(preCheckpointSubject);
-            var query1 = input1.GroupApply(e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => Tuple.Create(g.Key, c));
+            var query1 = input1.GroupApply(
+                e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => ValueTuple.Create(g.Key, c));
 
             var output1 = container1.RegisterOutput(query1);
 
-            var outputAsync1 = output1.Where(e => e.IsData).Select(e => e.Payload).ForEachAsync(o => outputListWithCheckpoint.Add(o));
+            var outputAsync1 = output1
+                .Where(e => e.IsData)
+                .Select(e => e.Payload)
+                .ForEachAsync(o => outputListWithCheckpoint.Add(o));
             var pipe1 = container1.Restore(null);
             preCheckpointData.ForEachAsync(e => preCheckpointSubject.OnNext(e)).Wait();
-            preCheckpointSubject.OnNext(StreamEvent.CreatePunctuation<Tuple<int, int>>(9999));
+            preCheckpointSubject.OnNext(StreamEvent.CreatePunctuation<ValueTuple<int, int>>(9999));
             pipe1.Checkpoint(state);
 
             // Seek to the beginning of the stream that represents checkpointed state
@@ -67,38 +68,51 @@ namespace CheckpointExample
 
             // Query 2: Restore the state from the saved checkpoint, and feed the second half of the dataset
             var input2 = container2.RegisterInput(postCheckpointSubject);
-            var query2 = input2.GroupApply(e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => Tuple.Create(g.Key, c));
+            var query2 = input2.GroupApply(
+                e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => ValueTuple.Create(g.Key, c));
             var output2 = container2.RegisterOutput(query2);
 
-            var outputAsync2 = output2.Where(e => e.IsData).Select(e => e.Payload).ForEachAsync(o => outputListWithCheckpoint.Add(o));
+            var outputAsync2 = output2
+                .Where(e => e.IsData)
+                .Select(e => e.Payload)
+                .ForEachAsync(o => outputListWithCheckpoint.Add(o));
             var pipe2 = container2.Restore(state);
             postCheckpointData.ForEachAsync(e => postCheckpointSubject.OnNext(e)).Wait();
             postCheckpointSubject.OnCompleted();
             outputAsync2.Wait();
 
             // Sort the payloads in the query result
-            outputListWithCheckpoint.Sort((a, b) => a.Item1.CompareTo(b.Item1) == 0 ? a.Item2.CompareTo(b.Item2) : a.Item1.CompareTo(b.Item1));
+            outputListWithCheckpoint.Sort(
+                (a, b) => a.Item1.CompareTo(b.Item1) == 0 ? a.Item2.CompareTo(b.Item2) : a.Item1.CompareTo(b.Item1));
 
             // Query 3: For comparison, run the query directly on the entire dataset without any checkpoint/restore
             var input3 = container3.RegisterInput(fullData);
-            var query3 = input3.GroupApply(e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => Tuple.Create(g.Key, c));
+            var query3 = input3.GroupApply(
+                e => e.Item1, str => str.Sum(e => (ulong)e.Item2), (g, c) => ValueTuple.Create(g.Key, c));
             var output3 = container3.RegisterOutput(query3);
 
-            var outputAsync3 = output3.Where(e => e.IsData).Select(e => e.Payload).ForEachAsync(o => outputListWithoutCheckpoint.Add(o));
+            var outputAsync3 = output3
+                .Where(e => e.IsData)
+                .Select(e => e.Payload)
+                .ForEachAsync(o => outputListWithoutCheckpoint.Add(o));
             container3.Restore(null); // The parameter of "null" to restore causes it to run from scratch
             outputAsync3.Wait();
 
             // Sort the payloads in the query result
-            outputListWithoutCheckpoint.Sort((a, b) => a.Item1.CompareTo(b.Item1) == 0 ? a.Item2.CompareTo(b.Item2) : a.Item1.CompareTo(b.Item1));
+            outputListWithoutCheckpoint.Sort(
+                (a, b) => a.Item1.CompareTo(b.Item1) == 0 ? a.Item2.CompareTo(b.Item2) : a.Item1.CompareTo(b.Item1));
 
-            // Perform a comparison of the checkpoint/restore query result and the result of the original query run directly on the entire dataset
+            // Perform a comparison of the checkpoint/restore query result and the result of the original query run
+            // directly on the entire dataset
             if (outputListWithCheckpoint.SequenceEqual(outputListWithoutCheckpoint))
             {
-                Console.WriteLine("SUCCESS: Output of query with checkpoint/restore matched output of uninterrupted query");
+                Console.WriteLine(
+                    "SUCCESS: Output of query with checkpoint/restore matched output of uninterrupted query");
             }
             else
             {
-                Console.WriteLine("ERROR: Output of query with checkpoint/restore did not match the output of uninterrupted query");
+                Console.WriteLine(
+                    "ERROR: Output of query with checkpoint/restore did not match the output of uninterrupted query");
             }
             Console.ReadLine();
         }

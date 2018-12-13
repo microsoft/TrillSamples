@@ -12,7 +12,7 @@ using Microsoft.StreamProcessing;
 
 namespace TemporalExamples
 {
-    public class Program
+    public sealed class Program
     {
         private static readonly StreamEvent<string>[] values =
         {
