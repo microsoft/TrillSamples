@@ -1,15 +1,19 @@
-﻿namespace StatelessExamples
-{
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reflection;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
 
-    using Microsoft.StreamProcessing;
-    using System.Linq.Expressions;
+namespace StatelessExamples
+{
 
     public class Program
     {
@@ -18,20 +22,14 @@
             public int x;
             public int y;
 
-            public override string ToString()
-            {
-                return " {x:" + x + ", y:" + y + "}";
-            }
+            public override string ToString() => $" {{x:{this.x}, y:{this.y}}}";
         }
 
         public struct Point1D
         {
             public int x;
 
-            public override string ToString()
-            {
-                return " {x:" + x + "}";
-            }
+            public override string ToString() => $" {{x:{this.x}}}";
         }
 
         public struct Point3D
@@ -41,10 +39,7 @@
             public int z;
             public string w;
 
-            public override string ToString()
-            {
-                return " {x:" + x + ", y:" + y + ", z:" + z + "}";
-            }
+            public override string ToString() => $" {{x:{this.x}, y:{this.y}, z:{this.z}}}";
         }
 
         private static readonly StreamEvent<Point>[] values =
@@ -64,7 +59,7 @@
         [DisplayName("WhereExample1")]
         private static void WhereExample1()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -92,10 +87,9 @@
                 StreamEvent.CreateInterval(7, 10, new ValueTuple<int, int> { Item1 = 7, Item2 = 14 }),
                 StreamEvent.CreateInterval(8, 10, new ValueTuple<int, int> { Item1 = 8, Item2 = 16 }),
                 StreamEvent.CreateInterval(9, 10, new ValueTuple<int, int> { Item1 = 9, Item2 = 18 }),
-                StreamEvent.CreatePunctuation<ValueTuple<int, int>>(StreamEvent.InfinitySyncTime)
         };
 
-        var input = values2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+        var input = values2.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -112,7 +106,7 @@
         [DisplayName("WhereExample2")]
         private static void WhereExample2()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -129,7 +123,7 @@
         [DisplayName("SelectExample1")]
         private static void SelectExample1()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -146,14 +140,15 @@
         [DisplayName("SelectExample2")]
         private static void SelectExample2()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Map each Point object to an anonymous type object.
             Console.WriteLine();
             Console.WriteLine("Query: input.Select(p => new { Distance = sqrt(p.x * p.x + p.y * p.y), Text = \"Point #\" + p.x })");
-            var output = input.Select(p => new { Distance = Math.Round(Math.Sqrt(p.x * p.x + p.y * p.y), 2), Text = "Point #" + p.x });
+            var output = input.Select(
+                p => new { Distance = Math.Round(Math.Sqrt((p.x * p.x) + (p.y * p.y)), 2), Text = "Point #" + p.x });
 
             Console.WriteLine();
             Console.WriteLine("Output =");
@@ -163,11 +158,11 @@
         [DisplayName("SelectExample3")]
         private static void SelectExample3()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            // Map each Point object to a Point1D object (same as SelectExample1) by 
+            // Map each Point object to a Point1D object (same as SelectExample1) by
             // automatically extracting fields defined in both types.
             Console.WriteLine();
             Console.WriteLine("Query: input.Select(() => new Point1D())");
@@ -181,7 +176,7 @@
         [DisplayName("SelectExample4")]
         private static void SelectExample4()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -198,7 +193,7 @@
         [DisplayName("SelectExample5")]
         private static void SelectExample5()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -219,7 +214,7 @@
         [DisplayName("SelectManyExample")]
         private static void SelectManyExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -241,8 +236,8 @@
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
@@ -263,7 +258,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -273,7 +268,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -285,12 +280,12 @@
                 }
 
                 int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

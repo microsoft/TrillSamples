@@ -1,18 +1,18 @@
-﻿using System;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
 using System.Linq;
 using System.Reactive.Linq;
-
 using Microsoft.StreamProcessing;
 
 namespace RealTimeExample
 {
-    class Program
+    public class Program
     {
-
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            Config.ForceRowBasedExecution = true;
-
             // Poll performance counter 4 times a second
             TimeSpan pollingInterval = TimeSpan.FromSeconds(0.25);
 
@@ -27,7 +27,7 @@ namespace RealTimeExample
             // Load the observable as a stream in Trill
             var inputStream =
                 source.Select(e => StreamEvent.CreateStart(e.StartTime.Ticks, e)) // Create an IObservable of StreamEvent<>
-                .ToStreamable(OnCompletedPolicy.Flush(), PeriodicPunctuationPolicy.Count(4)); // Create a streamable with a punctuation every 4 events
+                .ToStreamable(null, FlushPolicy.FlushOnPunctuation, null, OnCompletedPolicy.Flush);
 
             // The query
             long windowSize = TimeSpan.FromSeconds(2).Ticks;
@@ -37,8 +37,7 @@ namespace RealTimeExample
             query.ToStreamEventObservable().ForEachAsync(e => WriteEvent(e)).Wait();
         }
 
-
-        static void WriteEvent<T>(StreamEvent<T> e)
+        private static void WriteEvent<T>(StreamEvent<T> e)
         {
             if (e.IsInterval)
             {
@@ -62,7 +61,7 @@ namespace RealTimeExample
             {
                 Console.WriteLine(
                   "Event Kind=Punctuation\tSync Time={0}",
-                  e.SyncTime);
+                  e.StartTime);
             }
         }
     }

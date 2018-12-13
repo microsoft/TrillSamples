@@ -1,20 +1,20 @@
-﻿using System.Collections.Generic;
-
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System.Collections.Generic;
 
 namespace PatternExamples
 {
-    public struct Payload
+    internal struct Payload
     {
         public string Field1;
         public int Field2;
 
-        public override string ToString()
-        {
-            return new { Field1 = this.Field1, Field2 = this.Field2 }.ToString();
-        }
+        public override string ToString() => new { this.Field1, this.Field2 }.ToString();
     }
 
-    public class FList<T> : List<T>
+    internal class FList<T> : List<T>
     {
 
         public FList<T> FAdd(T t)

@@ -1,17 +1,17 @@
-﻿namespace IngressEgressExamples
-{
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Linq.Expressions;
-    using System.Reactive.Linq;
-    using System.Reflection;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
 
-    using Microsoft.StreamProcessing;
-    using System.Linq.Expressions;
+namespace IngressEgressExamples
+{
 
     public class Program
     {
@@ -20,10 +20,7 @@
             public int x;
             public int y;
 
-            public override string ToString()
-            {
-                return " {x:" + x + ", y:" + y + "}";
-            }
+            public override string ToString() => $" {{x:{this.x}, y:{this.y}}}";
         };
 
         [DisplayName("ArrayBasedIngressExample")]
@@ -46,7 +43,6 @@
                 StreamEvent.CreateInterval(7, 10, new Point { x = 7, y = 14 }),
                 StreamEvent.CreateInterval(8, 10, new Point { x = 8, y = 16 }),
                 StreamEvent.CreateInterval(9, 10, new Point { x = 9, y = 18 }),
-                StreamEvent.CreatePunctuation<Point>(StreamEvent.InfinitySyncTime)
             };
 
             var segment1 = new ArraySegment<StreamEvent<Point>>(values1);
@@ -54,7 +50,7 @@
             var segments = new ArraySegment<StreamEvent<Point>>[] { segment1, segment2 };
 
             // Array-based ingress.
-            var input = segments.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = segments.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -78,7 +74,7 @@
                 StreamEvent.CreatePunctuation<Point>(StreamEvent.InfinitySyncTime)
             };
 
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -108,7 +104,8 @@
             };
 
             // Atemporal ingress operator.
-            var input = points.ToObservable().ToAtemporalStreamable(TimelinePolicy.Sequence(5), OnCompletedPolicy.EndOfStream());
+            var input = points.ToObservable()
+                .ToAtemporalStreamable(TimelinePolicy.Sequence(5));
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -125,13 +122,12 @@
         private struct Function
         {
             public readonly MethodInfo Method;
-
             public readonly string Name;
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
@@ -152,7 +148,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -162,7 +158,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -174,12 +170,12 @@
                 }
 
                 int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

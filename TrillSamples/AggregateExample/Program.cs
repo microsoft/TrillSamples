@@ -1,15 +1,14 @@
-﻿namespace AggregateExample
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
+
+namespace AggregateExample
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reflection;
-
-    using Microsoft.StreamProcessing;
-
     public class Program
     {
         private static readonly StreamEvent<int>[] values =
@@ -29,7 +28,7 @@
         [DisplayName("CountExample")]
         private static void CountExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -47,7 +46,7 @@
         [DisplayName("AverageExample")]
         private static void AverageExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -65,7 +64,7 @@
         [DisplayName("MinExample")]
         private static void MinExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -83,7 +82,7 @@
         [DisplayName("MaxExample")]
         private static void MaxExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -101,7 +100,7 @@
         [DisplayName("MedianExample")]
         private static void MedianExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -119,7 +118,7 @@
         [DisplayName("TopKExample")]
         private static void TopKExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -137,14 +136,23 @@
         [DisplayName("CompoundAggregateExample")]
         private static void CompoundAggregateExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Report 3 aggregates in one query.
             Console.WriteLine();
-            Console.WriteLine("Query: input.Aggregate(w => w.Count(), w => w.Max(v => v), w => w.Average(v => v), (count, max, average) => new { Count = count, Max = max, Average = average })");
-            var output = input.Aggregate(w => w.Count(), w => w.Max(v => v), w => w.Average(v => v), (count, max, average) => new { Count = count, Max = max, Average = average });
+            Console.WriteLine("Query: input");
+            Console.WriteLine("    .Aggregate(");
+            Console.WriteLine("        w => w.Count(),");
+            Console.WriteLine("        w => w.Max(v => v),");
+            Console.WriteLine("        w => w.Average(v => v),");
+            Console.WriteLine("        (count, max, average) => new { Count = count, Max = max, Average = average })");
+            var output = input.Aggregate(
+                w => w.Count(),
+                w => w.Max(v => v),
+                w => w.Average(v => v),
+                (count, max, average) => new { Count = count, Max = max, Average = average });
 
             Console.WriteLine("Output =");
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
@@ -155,12 +163,12 @@
         [DisplayName("TumblingWindowCountExample")]
         private static void TumblingWindowCountExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            // Every 3 time units, report the number of events that were being processed 
-            // at some point during that period. Report the result at a point in time, at the 
+            // Every 3 time units, report the number of events that were being processed
+            // at some point during that period. Report the result at a point in time, at the
             // end of the 3 time units window.
             var duration = 3;
             var offset = 0;
@@ -177,12 +185,12 @@
         [DisplayName("HoppingWindowCountExample")]
         private static void HoppingWindowCountExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            // Report the count of events being processed at some time over a 5 time units window, 
-            // with the window moving in 3 time units hops. Provide the counts as of the last reported 
+            // Report the count of events being processed at some time over a 5 time units window,
+            // with the window moving in 3 time units hops. Provide the counts as of the last reported
             // result as of a point in time, reflecting the events processed over the last 5 time units.
             var windowSize = 5;
             var period = 3;
@@ -200,18 +208,27 @@
         [DisplayName("GroupAggregateExample")]
         private static void GroupAggregateExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Every 5 time units, report the number of events and the sum of payload values for each group key.
             Console.WriteLine();
-            Console.WriteLine("Query: input.TumblingWindowLifetime(5).GroupAggregate(w => w / 3, w => w.Count(), w => w.Sum(v => v), (key, count, sum) => new { Key = key.Key, Count = count, Sum = sum })");
-            var output = input.TumblingWindowLifetime(5).GroupAggregate(
-                w => w / 3,
-                w => w.Count(),
-                w => w.Sum(v => v),
-                (key, count, sum) => new { Key = key.Key, Count = count, Sum = sum });
+            Console.WriteLine("Query: input");
+            Console.WriteLine("    .TumblingWindowLifetime(5)");
+            Console.WriteLine("    .GroupAggregate(");
+            Console.WriteLine("        w => w / 3,");
+            Console.WriteLine("        w => w.Count(),");
+            Console.WriteLine("        w => w.Sum(v => v),");
+            Console.WriteLine("        (key, count, sum) => new { Key = key.Key, Count = count, Sum = sum })");
+
+            var output = input
+                .TumblingWindowLifetime(5)
+                .GroupAggregate(
+                    w => w / 3,
+                    w => w.Count(),
+                    w => w.Sum(v => v),
+                    (key, count, sum) => new { Key = key.Key, Count = count, Sum = sum });
 
             Console.WriteLine("Output =");
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
@@ -222,14 +239,21 @@
         [DisplayName("UDAExample")]
         private static void UDAExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Report the value of a user-defined aggregate function StandardDeviation.
             Console.WriteLine();
-            Console.WriteLine("Query: input.Aggregate(w => w.StandardDeviation(v => v), w => w.Count(), (std, count) => new { StandardDeviation= std, Count = count })");
-            var output = input.Aggregate(w => w.StandardDeviation(v => v), w => w.Count(), (std, count) => new { StandardDeviation = std, Count = count });
+            Console.WriteLine("Query: input");
+            Console.WriteLine("    .Aggregate(");
+            Console.WriteLine("        w => w.StandardDeviation(v => v),");
+            Console.WriteLine("        w => w.Count(),");
+            Console.WriteLine("        (std, count) => new { StandardDeviation= std, Count = count })");
+            var output = input.Aggregate(
+                w => w.StandardDeviation(v => v),
+                w => w.Count(),
+                (std, count) => new { StandardDeviation = std, Count = count });
 
             Console.WriteLine("Output =");
             output.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
@@ -240,13 +264,12 @@
         private struct Function
         {
             public readonly MethodInfo Method;
-
             public readonly string Name;
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
@@ -267,7 +290,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -277,7 +300,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -289,12 +312,12 @@
                 }
 
                 int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

@@ -1,13 +1,15 @@
-﻿using System;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
 using System.Linq;
 using System.Reactive.Linq;
-
 using Microsoft.StreamProcessing;
-
 
 namespace ToyExample
 {
-    class Program
+    public class Program
     {
         public struct MyStruct
         {
@@ -17,11 +19,11 @@ namespace ToyExample
 
             public override string ToString()
             {
-                return "" + field1 + "\t" + field2 + "\t" + field3;
+                return this.field1 + "\t" + this.field2 + "\t" + this.field3;
             }
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             // ingress data
             var input =
@@ -29,7 +31,7 @@ namespace ToyExample
                     .Range(0, 100)
                     .Select(e => new MyStruct { field1 = e % 10, field2 = e + 0.5, field3 = "blah" })
                     .Select(e => StreamEvent.CreateStart(StreamEvent.MinSyncTime, e))
-                    .ToStreamable(OnCompletedPolicy.EndOfStream(), PeriodicPunctuationPolicy.None())
+                    .ToStreamable()
                     .Cache();
 
             // query
@@ -42,7 +44,7 @@ namespace ToyExample
             query
                 .ToStreamEventObservable()
                 .Where(e => e.IsData)
-                .ForEachAsync(e => Console.WriteLine("{0}\t{1}\t{2}", e.SyncTime, e.OtherTime, e.Payload)).Wait();
+                .ForEachAsync(e => Console.WriteLine("{0}\t{1}\t{2}", e.StartTime, e.EndTime, e.Payload)).Wait();
 
             Console.ReadLine();
         }

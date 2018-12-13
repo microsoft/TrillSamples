@@ -1,12 +1,25 @@
-﻿namespace AggregateExample
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Linq.Expressions;
+using Microsoft.StreamProcessing;
+using Microsoft.StreamProcessing.Aggregates;
+
+namespace AggregateExample
 {
-    using System;
-    using System.Linq.Expressions;
+    internal static class StandardDeviationExtensions
+    {
+        public static IAggregate<TSource, StandardDeviationState, double> StandardDeviation<TKey, TSource>(
+            this Window<TKey, TSource> window, Expression<Func<TSource, int>> selector)
+        {
+            var aggregate = new StandardDeviationAggregate();
+            return aggregate.Wrap(selector);
+        }
+    }
 
-    using Microsoft.StreamProcessing;
-    using Microsoft.StreamProcessing.Aggregates;
-
-    public struct StandardDeviationState
+    internal struct StandardDeviationState
     {
         public ulong Count;
 
@@ -15,11 +28,11 @@
         public long SumSquared;
     }
 
-    public class StandardDeviationAggregate : IAggregate<int, StandardDeviationState, double>
+    internal class StandardDeviationAggregate : IAggregate<int, StandardDeviationState, double>
     {
         public Expression<Func<StandardDeviationState>> InitialState()
         {
-            return () => new StandardDeviationState();
+            return () => default;
         }
 
         public Expression<Func<StandardDeviationState, long, int, StandardDeviationState>> Accumulate()
@@ -54,17 +67,8 @@
 
         public Expression<Func<StandardDeviationState, double>> ComputeResult()
         {
-            return state => Math.Sqrt(((double)state.SumSquared / state.Count) - ((double)(state.Sum * state.Sum) / (state.Count * state.Count)));
-        }
-    }
-
-    public static class StandardDeviationExtensions
-    {
-        public static IAggregate<TSource, StandardDeviationState, double> StandardDeviation<TKey, TSource>(
-            this Window<TKey, TSource> window, Expression<Func<TSource, int>> selector)
-        {
-            var aggregate = new StandardDeviationAggregate();
-            return aggregate.Wrap(selector);
+            return state => Math.Sqrt(
+                ((double)state.SumSquared / state.Count) - ((double)(state.Sum * state.Sum) / (state.Count * state.Count)));
         }
     }
 }
