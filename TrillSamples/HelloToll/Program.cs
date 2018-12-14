@@ -1,19 +1,22 @@
-﻿namespace HelloToll
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
+
+namespace HelloToll
 {
-    using System;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reflection;
-
-    using Microsoft.StreamProcessing;
-
-    class Program
+    public sealed class Program
     {
         [DisplayName("Pass-through")]
         [Description("Pass-through query to just show input stream in the same form as we show output.")]
-        static void PassThrough()
+        private static void PassThrough()
         {
             var inputStream = GetTollReadings();
             Display(inputStream);
@@ -24,7 +27,7 @@
                      "that were being processed at some point during that period at " +
                      "the toll station since the last result. Report the result at a " +
                      "point in time, at the end of the 3 minute window.")]
-        static void TumblingCount()
+        private static void TumblingCount()
         {
             var inputStream = GetTollReadings();
             var query = inputStream.TumblingWindowLifetime(TimeSpan.FromMinutes(3).Ticks).Count();
@@ -36,7 +39,7 @@
                      "a 3 minute window, with the window moving in one minute hops. " +
                      "Provide the counts as of the last reported result as of a point " +
                      "in time, reflecting the vehicles processed over the last 3 minutes.")]
-        static void HoppingCount()
+        private static void HoppingCount()
         {
             var inputStream = GetTollReadings();
             var query =
@@ -50,7 +53,7 @@
         [Description("Find the toll generated from vehicles being processed at each " +
                      "toll station at some time over a 3 minute window, with the time advancing " +
                      "in one minute hops. Provide the value as of the last reported result.")]
-        static void PartitionedHoppingWindow()
+        private static void PartitionedHoppingWindow()
         {
             var inputStream = GetTollReadings();
             var query = inputStream.GroupApply(
@@ -69,7 +72,7 @@
         [Description("Find the most recent toll generated from vehicles being processed " +
                      "at each station over a 1 minute window reporting the result every time a " +
                      "change occurs in the input.")]
-        static void PartitionedSlidingWindow()
+        private static void PartitionedSlidingWindow()
         {
             var inputStream = GetTollReadings();
             var query =
@@ -89,7 +92,7 @@
 
         [DisplayName("Partitioned Moving Average")]
         [Description("Moving average over the results of [Partitioned Sliding window].")]
-        static void PartitionedMovingAverage()
+        private static void PartitionedMovingAverage()
         {
             var inputStream = GetTollReadings();
             var partitionedSlidingWindow =
@@ -120,7 +123,7 @@
         [Description("Report the output whenever Toll Booth 2 has processed the same number " +
                      "of vehicles as Toll Booth 1, computed over the last 1 minute, every time " +
                      "a change occurs in either stream.")]
-        static void InnerJoin()
+        private static void InnerJoin()
         {
             var inputStream = GetTollReadings();
             var partitionedSlidingWindow =
@@ -151,7 +154,7 @@
 
         [DisplayName("Cross Join")]
         [Description("Variation of [Inner Join] with cross join instead.")]
-        static void CrossJoin()
+        private static void CrossJoin()
         {
             var inputStream = GetTollReadings();
             var partitionedSlidingWindow =
@@ -177,7 +180,7 @@
         [DisplayName("Left Anti Join")]
         [Description("Report toll violators – owners of vehicles that pass through an automated " +
                      "toll booth without a valid EZ-Pass tag read.")]
-        static void LeftAntiJoin()
+        private static void LeftAntiJoin()
         {
             var inputStream = GetTollReadings();
 
@@ -198,19 +201,19 @@
 
         [DisplayName("Outer Join")]
         [Description("Outer Join using query primitives.")]
-        static void OuterJoin()
+        private static void OuterJoin()
         {
             var inputStream = GetTollReadings();
 
             // Simulate the left stream input from inputStream
             var outerJoin_L =
-                inputStream.Select(e => new { LicensePlate = e.LicensePlate, Make = e.Make, Model = e.Model, });
+                inputStream.Select(e => new { e.LicensePlate, e.Make, e.Model, });
 
             // Simulate the right stream input from inputStream – eliminate all events with Toyota as the vehicle
             // These should be the rows in the outer joined result with NULL values for Toll and LicensePlate
             var outerJoin_R =
                 inputStream.Where(e => e.Make != "Toyota")
-                           .Select(e => new { LicensePlate = e.LicensePlate, Toll = e.Toll, TollId = e.TollId });
+                           .Select(e => new { e.LicensePlate, e.Toll, e.TollId });
 
             // Inner join the two simulated input streams
             var innerJoin = outerJoin_L.Join(
@@ -247,11 +250,11 @@
         [DisplayName("UDF")]
         [Description("For each vehicle that is being processed at an EZ-Pass booth, report " +
                      "the TollReading if the tag does not exist, has expired, or is reported stolen.")]
-        static void UDF()
+        private static void UDF()
         {
             var inputStream = GetTollReadings();
             var query =
-                inputStream.Where(r => 0 == r.Tag.Length || TagInfo.IsLostOrStolen(r.Tag) || TagInfo.IsExpired(r.Tag))
+                inputStream.Where(r => r.Tag.Length == 0 || TagInfo.IsLostOrStolen(r.Tag) || TagInfo.IsExpired(r.Tag))
                            .Select(
                                r =>
                                new TollViolation
@@ -268,10 +271,10 @@
 
         /// <summary>
         /// Defines a stream of TollReadings used throughout examples. A simulated data array
-        /// is wrapped into the Enumerable source which is then converted to a stream. 
+        /// is wrapped into the Enumerable source which is then converted to a stream.
         /// </summary>
         /// <returns>Returns stream of simulated TollReadings used in examples.</returns>
-        static IStreamable<Empty, TollReading> GetTollReadings()
+        private static IStreamable<Empty, TollReading> GetTollReadings()
         {
             return // Simulated readings data defined as an array.
                 new[]
@@ -289,7 +292,7 @@
                                     VehicleType = 1,
                                     VehicleWeight = 0,
                                     Toll = 7.0f,
-                                    Tag = ""
+                                    Tag = string.Empty
                                 }),
                         StreamEvent.CreateInterval(
                             GetDateTimeTicks(2009, 06, 25, 12, 02, 0),
@@ -334,7 +337,7 @@
                                     VehicleType = 1,
                                     VehicleWeight = 0,
                                     Toll = 4.0f,
-                                    Tag = ""
+                                    Tag = string.Empty
                                 }),
                         StreamEvent.CreateInterval(
                             GetDateTimeTicks(2009, 06, 25, 12, 03, 0),
@@ -574,7 +577,7 @@
                                     VehicleType = 1,
                                     VehicleWeight = 0,
                                     Toll = 4.0f,
-                                    Tag = ""
+                                    Tag = string.Empty
                                 }),
                         StreamEvent.CreateInterval(
                             GetDateTimeTicks(2009, 06, 25, 12, 20, 0),
@@ -619,10 +622,10 @@
                                     VehicleType = 1,
                                     VehicleWeight = 0,
                                     Toll = 4.0f,
-                                    Tag = ""
+                                    Tag = string.Empty
                                 }),
                         StreamEvent.CreatePunctuation<TollReading>(StreamEvent.InfinitySyncTime)
-                    }.ToObservable().ToStreamable(OnCompletedPolicy.None());
+                    }.ToObservable().ToStreamable();
         }
 
         private static long GetDateTimeTicks(int year, int month, int day, int hour, int minute, int second)
@@ -638,27 +641,25 @@
                         switch (r.Kind)
                         {
                             case StreamEventKind.Interval:
-                                Console.WriteLine(
-                                    "INTERVAL:    start={0}, end={1}, payload={2}", new DateTime(r.SyncTime), new DateTime(r.OtherTime), r.Payload);
+                                Console.WriteLine($"INTERVAL:    " +
+                                    $"start={new DateTime(r.StartTime)}, end={new DateTime(r.EndTime)}, payload={r.Payload}");
                                 break;
                             case StreamEventKind.Start:
-                                Console.WriteLine("START EDGE:  start={0}, payload={1}", new DateTime(r.SyncTime), r.Payload);
+                                Console.WriteLine($"START EDGE:  " +
+                                    $"start={new DateTime(r.StartTime)}, payload={r.Payload}");
                                 break;
                             case StreamEventKind.End:
-                                Console.WriteLine(
-                                    "END EDGE:    end={0}, original start={1}, payload={2}",
-                                    new DateTime(r.SyncTime),
-                                    new DateTime(r.OtherTime),
-                                    r.Payload);
+                                Console.WriteLine($"END EDGE:    " +
+                                    $"end={new DateTime(r.EndTime)}, original start={new DateTime(r.StartTime)}, payload={r.Payload}");
                                 break;
                             case StreamEventKind.Punctuation:
-                                Console.WriteLine("PUNCTUATION: start={0}", new DateTime(r.SyncTime));
+                                Console.WriteLine("PUNCTUATION: start={0}", new DateTime(r.StartTime));
                                 break;
                         }
                     }).Wait();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = (from mi in typeof(Program).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
                          let nameAttr = mi.GetCustomAttributes(typeof(DisplayNameAttribute), false)
@@ -667,8 +668,8 @@
                          let descriptionAttr = mi.GetCustomAttributes(typeof(DescriptionAttribute), false)
                              .OfType<DescriptionAttribute>()
                              .SingleOrDefault()
-                         where null != nameAttr
-                         select new { Action = mi, Name = nameAttr.DisplayName, Description = descriptionAttr.Description }).ToArray();
+                         where nameAttr != null
+                         select new { Action = mi, Name = nameAttr.DisplayName, descriptionAttr.Description }).ToArray();
 
             while (true)
             {
@@ -676,7 +677,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -688,11 +689,11 @@
                 }
 
                 int demoToRun;
-                demoToRun = Int32.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun)
+                demoToRun = int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun)
                     ? demoToRun
                     : -1;
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

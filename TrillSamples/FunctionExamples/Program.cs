@@ -1,19 +1,20 @@
-﻿namespace FunctionExamples
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
+
+namespace FunctionExamples
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reflection;
-
-    using Microsoft.StreamProcessing;
-
-    public class Program
+    public static class Program
     {
-        // This program is a supplement to the Trill Users Guide, 
-
         private static readonly StreamEvent<int>[] values =
             {
                 StreamEvent.CreateInterval(1, 10, 1),
@@ -36,15 +37,15 @@
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
         [DisplayName("Where")]
         private static void WhereFunc()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -60,7 +61,7 @@
         [DisplayName("Select")]
         private static void SelectFunc()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -76,7 +77,7 @@
         [DisplayName("AlterEventLifetime")]
         private static void AlterLifetimeFunc()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -92,7 +93,7 @@
         [DisplayName("SelectMany")]
         private static void SelectManyFunc()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -108,7 +109,7 @@
         [DisplayName("Count")]
         private static void CountFunc()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -138,7 +139,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -148,7 +149,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -159,13 +160,12 @@
                     break;
                 }
 
-                int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out int demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

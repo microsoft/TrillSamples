@@ -1,40 +1,34 @@
-﻿namespace HelloWorld
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
+
+namespace HelloWorld
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reactive.Linq;
-
-    using Microsoft.StreamProcessing;
-
     // Input events to imitate sensor readings
-    public class SensorReading
+    internal sealed class SensorReading
     {
         public int Time { get; set; }
 
         public int Value { get; set; }
 
-        public override string ToString()
-        {
-            return new { Time, Value }.ToString();
-        }
+        public override string ToString() => new { this.Time, this.Value }.ToString();
 
-        public override bool Equals(object obj)
-        {
-            var other = obj as SensorReading;
-            return other != null && this.Time == other.Time && this.Value == other.Value;
-        }
+        public override bool Equals(object obj) =>
+            obj is SensorReading other && this.Time == other.Time && this.Value == other.Value;
 
-        public override int GetHashCode()
-        {
-            return this.Time.GetHashCode() ^ this.Value.GetHashCode();
-        }
+        public override int GetHashCode() => this.Time.GetHashCode() ^ this.Value.GetHashCode();
     }
 
-    class Program
+    public sealed class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            // We will be building a query that takes a stream of SensorReading events. 
+            // We will be building a query that takes a stream of SensorReading events.
             // It will work the same way on real-time data or past recorded events.
             Console.WriteLine("Press L for Live or H for Historic Data");
             ConsoleKeyInfo key = Console.ReadKey();
@@ -69,7 +63,8 @@
                         var filteredInputStream = input.Where(s => s.Value > threshold);
                         var filteredAlteredStream = alteredForward.Where(s => s.Value < threshold);
                         return filteredInputStream.Join(
-                            filteredAlteredStream, (evt, prev) => new { evt.Time, Low = prev.Value, High = evt.Value });
+                            filteredAlteredStream,
+                            (evt, prev) => new { evt.Time, Low = prev.Value, High = evt.Value });
                     });
 
             crossedThreshold.ToStreamEventObservable().ForEachAsync(r => Console.WriteLine(r)).Wait();
@@ -84,11 +79,11 @@
             new SensorReading { Time = 2, Value = 20 },
             new SensorReading { Time = 3, Value = 15 },
             new SensorReading { Time = 4, Value = 30 },
-            new SensorReading { Time = 5, Value = 45 }, // here we crossed the threshold upward
+            new SensorReading { Time = 5, Value = 45 }, // Here we crossed the threshold upward
             new SensorReading { Time = 6, Value = 50 },
-            new SensorReading { Time = 7, Value = 30 }, // here we crossed downward // **** note that the current query logic only detects upward swings. ****/
+            new SensorReading { Time = 7, Value = 30 }, // Here we crossed downward. Note that the current query logic only detects upward swings.
             new SensorReading { Time = 8, Value = 35 },
-            new SensorReading { Time = 9, Value = 60 }, // here we crossed upward again
+            new SensorReading { Time = 9, Value = 60 }, // Here we crossed upward again
             new SensorReading { Time = 10, Value = 20 }
         };
 
@@ -119,10 +114,13 @@
             {
                 return SimulateLiveData()
                         .Select(r => StreamEvent.CreateInterval(r.Time, r.Time + 1, r))
-                        .ToStreamable(OnCompletedPolicy.EndOfStream(), PeriodicPunctuationPolicy.Count(1));
+                        .ToStreamable();
             }
 
-            return HistoricData.ToObservable().Select(r => StreamEvent.CreateInterval(r.Time, r.Time + 1, r)).ToStreamable(OnCompletedPolicy.None());
+            return HistoricData
+                .ToObservable()
+                .Select(r => StreamEvent.CreateInterval(r.Time, r.Time + 1, r))
+                .ToStreamable();
         }
     }
 }

@@ -1,6 +1,10 @@
-﻿namespace HelloToll
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+namespace HelloToll
 {
-    public struct TollReading
+    internal struct TollReading
     {
         public string TollId { get; set; }
         public string LicensePlate { get; set; }
@@ -14,11 +18,16 @@
 
         public override string ToString()
         {
-            return new { TollId, LicensePlate, State, Make, Model, VehicleType, VehicleWeight, Toll, Tag }.ToString();
+            return new { this.TollId, this.LicensePlate, this.State, this.Make,
+                this.Model,
+                this.VehicleType,
+                this.VehicleWeight,
+                this.Toll,
+                this.Tag }.ToString();
         }
     }
 
-    public class Toll
+    internal sealed class Toll
     {
         public string TollId { get; set; }
         public double TollAmount { get; set; }
@@ -26,13 +35,12 @@
 
         public override string ToString()
         {
-            return new { TollId, TollAmount, VehicleCount }.ToString();
+            return new { this.TollId, this.TollAmount, this.VehicleCount }.ToString();
         }
 
         public override bool Equals(object obj)
         {
-            var other = obj as Toll;
-            if (other == null) return false;
+            if (!(obj is Toll other)) return false;
             return this.TollId.Equals(other.TollId) && this.TollAmount.Equals(other.TollAmount) && this.VehicleCount.Equals(other.VehicleCount);
         }
         public override int GetHashCode()
@@ -41,18 +49,18 @@
         }
     }
 
-    public class TollAverage
+    internal sealed class TollAverage
     {
         public string TollId { get; set; }
         public double AverageToll { get; set; }
 
         public override string ToString()
         {
-            return new { TollId, AverageToll }.ToString();
+            return new { this.TollId, this.AverageToll }.ToString();
         }
     }
 
-    public class TollCompare
+    internal sealed class TollCompare
     {
         public string TollId1 { get; set; }
         public string TollId2 { get; set; }
@@ -60,11 +68,11 @@
 
         public override string ToString()
         {
-            return new { TollId1, TollId2, VehicleCount }.ToString();
+            return new { this.TollId1, this.TollId2, this.VehicleCount }.ToString();
         }
     }
 
-    public class TopEvents
+    internal sealed class TopEvents
     {
         public int TollRank { get; set; }
         public string TollId { get; set; }
@@ -73,11 +81,11 @@
 
         public override string ToString()
         {
-            return new { TollRank, TollId, TollAmount, VehicleCount }.ToString();
+            return new { this.TollRank, this.TollId, this.TollAmount, this.VehicleCount }.ToString();
         }
     }
 
-    public class AccountInfo
+    internal sealed class AccountInfo
     {
         public string AccountId { get; set; }
         public string Name { get; set; }
@@ -87,11 +95,12 @@
 
         public override string ToString()
         {
-            return new { AccountId, Name, ZipCode, Address1, Address2 }.ToString();
+            return new { this.AccountId, this.Name, this.ZipCode, this.Address1,
+                this.Address2 }.ToString();
         }
     }
 
-    public class TollViolation
+    internal sealed class TollViolation
     {
         public string TollId { get; set; }
         public string LicensePlate { get; set; }
@@ -102,11 +111,13 @@
 
         public override string ToString()
         {
-            return new { TollId, LicensePlate, State, Make, Model, Tag }.ToString();
+            return new { this.TollId, this.LicensePlate, this.State, this.Make,
+                this.Model,
+                this.Tag }.ToString();
         }
     }
 
-    public class TollOuterJoin
+    internal sealed class TollOuterJoin
     {
         public string LicensePlate { get; set; }
         public string Make { get; set; }
@@ -116,11 +127,12 @@
 
         public override string ToString()
         {
-            return new { LicensePlate, Make, Model, Toll, TollId }.ToString();
+            return new { this.LicensePlate, this.Make, this.Model, this.Toll,
+                this.TollId }.ToString();
         }
     }
 
-    public class VehicleWeightInfo
+    internal sealed class VehicleWeightInfo
     {
         public string LicensePlate { get; set; }
         public double? Weight { get; set; }
@@ -128,7 +140,7 @@
 
         public override string ToString()
         {
-            return new { LicensePlate, Weight, WeightCharge }.ToString();
+            return new { this.LicensePlate, this.Weight, this.WeightCharge }.ToString();
         }
     }
 }

@@ -1,15 +1,18 @@
-﻿namespace TemporalExamples
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
+
+namespace TemporalExamples
 {
-    using System;
-    using System.ComponentModel;
-    using System.Reactive.Linq;
-
-    using Microsoft.StreamProcessing;
-    using System.Reflection;
-    using System.Collections.Generic;
-    using System.Globalization;
-
-    public class Program
+    public sealed class Program
     {
         private static readonly StreamEvent<string>[] values =
         {
@@ -36,7 +39,7 @@
         [DisplayName("ExtendLifetimeExample")]
         private static void ExtendLifetimeExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -54,7 +57,7 @@
         [DisplayName("UnaryClipExample")]
         private static void UnaryClipExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -72,16 +75,16 @@
         [DisplayName("BinaryClipExample")]
         private static void BinaryClipExample()
         {
-            var input1 = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input1 = values.ToObservable().ToStreamable();
             Console.WriteLine("Input1 =");
             input1.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            var input2 = values2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input2 = values2.ToObservable().ToStreamable();
             Console.WriteLine();
             Console.WriteLine("Input2 =");
             input2.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            // Truncate the lifetime of each event in Input1 by the first event in Input2 
+            // Truncate the lifetime of each event in Input1 by the first event in Input2
             // which has the same key and occurs later than the event in Input1.
             Console.WriteLine();
             Console.WriteLine("Query: input1.ClipEventDuration(input2, e => e, e => e)");
@@ -96,7 +99,7 @@
         [DisplayName("SessionTimeoutExample")]
         private static void SessionTimeoutExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -114,7 +117,7 @@
         [DisplayName("PointAtEndExample")]
         private static void PointAtEndExample()
         {
-            var input = values.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input = values.ToObservable().ToStreamable();
             Console.WriteLine("Input =");
             input.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -137,8 +140,8 @@
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
@@ -159,7 +162,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -169,7 +172,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -181,12 +184,12 @@
                 }
 
                 int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);

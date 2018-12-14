@@ -1,33 +1,35 @@
-﻿namespace EventHubReceiver
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-    using System.Text;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.EventHubs;
-    using Microsoft.Azure.EventHubs.Processor;
-    using Microsoft.StreamProcessing;
-    using Microsoft.WindowsAzure.Storage;
-    using Microsoft.WindowsAzure.Storage.Blob;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Threading.Tasks;
+using Microsoft.Azure.EventHubs;
+using Microsoft.Azure.EventHubs.Processor;
+using Microsoft.StreamProcessing;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
+namespace EventHubReceiver
+{
     /// <summary>
     /// Event processor for Trill query with state
     /// </summary>
-    public class EventProcessor : IEventProcessor
+    public sealed class EventProcessor : IEventProcessor
     {
-        private Stopwatch _checkpointStopWatch;
-        private CloudBlobContainer checkpointContainer;
-        private Subject<StreamEvent<long>> input;
-        private QueryContainer q;
-        private Microsoft.StreamProcessing.Process p;
-
         private static readonly TimeSpan CheckpointInterval = TimeSpan.FromSeconds(10);
         private static readonly string StorageConnectionString = Program.StorageConnectionString;
+
+        private Stopwatch checkpointStopWatch;
+        private CloudBlobContainer checkpointContainer;
+        private Subject<StreamEvent<long>> input;
+        private QueryContainer queryContainer;
+        private Microsoft.StreamProcessing.Process queryProcess;
 
         /// <summary>
         /// Close processor for partition
@@ -50,15 +52,16 @@
         {
             Config.ForceRowBasedExecution = true;
 
-            _checkpointStopWatch = new Stopwatch();
-            _checkpointStopWatch.Start();
+            this.checkpointStopWatch = new Stopwatch();
+            this.checkpointStopWatch.Start();
 
-            var _storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            var _blobClient = _storageAccount.CreateCloudBlobClient();
-            checkpointContainer = _blobClient.GetContainerReference("checkpoints");
-            checkpointContainer.CreateIfNotExistsAsync().Wait();
+            var storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            var blobClient = storageAccount.CreateCloudBlobClient();
+            this.checkpointContainer = blobClient.GetContainerReference("checkpoints");
+            this.checkpointContainer.CreateIfNotExistsAsync().Wait();
 
-            var blockBlob = checkpointContainer.GetBlockBlobReference(context.Lease.PartitionId + "-" + context.Lease.SequenceNumber);
+            var blockBlob = this.checkpointContainer.GetBlockBlobReference(
+                $"{context.Lease.PartitionId}-{context.Lease.SequenceNumber}");
             if (blockBlob.Exists())
             {
                 Console.WriteLine($"Restoring query from EH checkpoint {context.Lease.SequenceNumber}");
@@ -66,23 +69,24 @@
                 CreateQuery();
                 try
                 {
-                    p = q.Restore(stream);
+                    this.queryProcess = this.queryContainer.Restore(stream);
                 }
                 catch
                 {
                     Console.WriteLine($"Unable to restore from checkpoint, starting clean");
                     CreateQuery();
-                    p = q.Restore();
+                    this.queryProcess = this.queryContainer.Restore();
                 }
             }
             else
             {
                 Console.WriteLine($"Clean start of query");
                 CreateQuery();
-                p = q.Restore();
+                this.queryProcess = this.queryContainer.Restore();
             }
 
-            Console.WriteLine($"SimpleEventProcessor initialized. Partition: '{context.PartitionId}', Lease SeqNo: '{context.Lease.SequenceNumber}'");
+            Console.WriteLine($"SimpleEventProcessor initialized. Partition: '{context.PartitionId}', " +
+                $"Lease SeqNo: '{context.Lease.SequenceNumber}'");
             return Task.CompletedTask;
         }
 
@@ -111,23 +115,24 @@
             {
                 var message = BinarySerializer.DeserializeStreamEventLong(eventData.Body.ToArray());
                 lastSeq = eventData.SystemProperties.SequenceNumber;
-                input.OnNext(message);
+                this.input.OnNext(message);
             }
 
-
-            if (_checkpointStopWatch.Elapsed > TimeSpan.FromSeconds(10))
+            if (this.checkpointStopWatch.Elapsed > TimeSpan.FromSeconds(10))
             {
                 Console.WriteLine("Taking checkpoint");
-                var _storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-                var _blobClient = _storageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = _blobClient.GetContainerReference("checkpoints");
+                var storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+                var blobClient = storageAccount.CreateCloudBlobClient();
+                CloudBlobContainer container = blobClient.GetContainerReference("checkpoints");
                 var blockBlob = container.GetBlockBlobReference(context.PartitionId + "-" + lastSeq);
                 CloudBlobStream blobStream = blockBlob.OpenWriteAsync().GetAwaiter().GetResult();
-                p.Checkpoint(blobStream);
+                this.queryProcess.Checkpoint(blobStream);
                 blobStream.Flush();
                 blobStream.Close();
 
-                return context.CheckpointAsync().ContinueWith(t => DeleteOlderCheckpoints(context.PartitionId + "-" + lastSeq));
+                return context
+                    .CheckpointAsync()
+                    .ContinueWith(t => DeleteOlderCheckpoints(context.PartitionId + "-" + lastSeq));
             }
             return Task.CompletedTask;
         }
@@ -137,11 +142,15 @@
         /// </summary>
         private void CreateQuery()
         {
-            q = new QueryContainer();
-            input = new Subject<StreamEvent<long>>();
-            var inputStream = q.RegisterInput(input, OnCompletedPolicy.EndOfStream(), DisorderPolicy.Drop(), PeriodicPunctuationPolicy.Time(1));
+            this.queryContainer = new QueryContainer();
+            this.input = new Subject<StreamEvent<long>>();
+            var inputStream = this.queryContainer.RegisterInput(
+                this.input,
+                DisorderPolicy.Drop(),
+                FlushPolicy.FlushOnPunctuation,
+                PeriodicPunctuationPolicy.Time(1));
             var query = inputStream.AlterEventDuration(StreamEvent.InfinitySyncTime).Count();
-            var async = q.RegisterOutput(query);
+            var async = this.queryContainer.RegisterOutput(query);
             async.Where(e => e.IsStart).ForEachAsync(o => Console.WriteLine($"{o}"));
         }
 
@@ -152,15 +161,17 @@
         /// <returns></returns>
         private Task DeleteOlderCheckpoints(string checkpointFile)
         {
-            var _storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            var _blobClient = _storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = _blobClient.GetContainerReference("checkpoints");
+            var storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            var blobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer container = blobClient.GetContainerReference("checkpoints");
             foreach (var blob in container.ListBlobs())
             {
                 if (((CloudBlockBlob)blob).Name != checkpointFile)
+                {
                     ((CloudBlockBlob)blob).Delete();
+                }
             }
-            _checkpointStopWatch.Restart();
+            this.checkpointStopWatch.Restart();
             return Task.CompletedTask;
         }
     }

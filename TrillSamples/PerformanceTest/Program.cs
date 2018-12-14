@@ -1,38 +1,40 @@
-﻿using System;
-using System.Linq;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
 using System.Diagnostics;
-
+using System.Linq;
 using System.Reactive.Linq;
-
-using Microsoft.StreamProcessing;
 using System.Runtime.InteropServices;
+using Microsoft.StreamProcessing;
 
 namespace PerformanceTest
 {
-    public class Program
+    internal static class Program
     {
 #if DEBUG
-        static int TotalInputEvents = 1000000;
+        private const int TotalInputEvents = 1000000;
 #else
-        static int TotalInputEvents = 50000000;
+        private const int TotalInputEvents = 50000000;
 #endif
-        static int NumRepeats = 1;
-        static int NumEventsPerTumble = 2000;
+        private const int NumRepeats = 1;
+        private const int NumEventsPerTumble = 2000;
 
-        public struct Payload
+        internal struct Payload
         {
             public long field1;
             public long field2;
         }
 
-        static void ProcessQuery<P>(IStreamable<Empty, P> query, string name)
+        private static void ProcessQuery<P>(IStreamable<Empty, P> query, string name)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
             Console.WriteLine("Query: {0}", name);
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
             for (int i = 0; i < NumRepeats; i++)
             {
@@ -47,20 +49,20 @@ namespace PerformanceTest
             Console.WriteLine("Throughput: {0} K ev/sec", ((long)NumRepeats * TotalInputEvents) / sw.ElapsedMilliseconds);
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             // Affinitize thread to core 0
             NativeMethods.AffinitizeThread(0);
 
             // Load a sample dataset into main memory
             Console.WriteLine("Caching the input dataset into main memory...");
-            Stopwatch sw0 = new Stopwatch();
+            var sw0 = new Stopwatch();
             sw0.Start();
 
             var tumblingWindowDataset =
                 Observable.Range(0, TotalInputEvents)
                     .Select(e => StreamEvent.CreateInterval(((long)e / NumEventsPerTumble) * NumEventsPerTumble, ((long)e / NumEventsPerTumble) * NumEventsPerTumble + NumEventsPerTumble, new Payload { field1 = 0, field2 = 0 }))
-                    .ToStreamable(OnCompletedPolicy.EndOfStream())
+                    .ToStreamable()
                     .SetProperty().IsConstantDuration(true, NumEventsPerTumble)
                     .SetProperty().IsSnapshotSorted(true, e => e.field1)
                     .Cache();
@@ -77,8 +79,8 @@ namespace PerformanceTest
 
             sw0.Stop();
             Console.WriteLine("Time to load cache with {0} tuples: {1} sec", TotalInputEvents, sw0.Elapsed);
+            Console.WriteLine("Press <ENTER> to continue");
             Console.ReadLine();
-
 
             Console.WriteLine("\n**** Queries over dataset with tumbling windows ****");
             ProcessQuery(tumblingWindowDataset.Where(e => e.field1 != 0), "input.Where(e => e.field1 != 0)");
@@ -88,9 +90,12 @@ namespace PerformanceTest
             ProcessQuery(tumblingWindowDataset.Average(e => e.field1), "input.Average(e => e.field1)");
             ProcessQuery(tumblingWindowDataset.Max(e => e.field1), "input.Max(e => e.field1)");
             ProcessQuery(tumblingWindowDataset.Min(e => e.field1), "input.Min(e => e.field1)");
-            ProcessQuery(tumblingWindowDataset.GroupApply(e => e.field2, str => str.Count(), (g, c) => new { Key = g, Count = c }), "input.GroupApply(e => e.field2, str => str.Count(), (g, c) => new { Key = g, Count = c })");
-            //ProcessQuery(tumblingWindowDataset.Multicast(str => str.Join(str, e => e.field1, e => e.field1, (l, r) => l)), "Join");
-
+            ProcessQuery(tumblingWindowDataset
+                .GroupApply(
+                    e => e.field2,
+                    str => str.Count(),
+                    (g, c) => new { Key = g, Count = c }),
+                "input.GroupApply(e => e.field2, str => str.Count(), (g, c) => new { Key = g, Count = c })");
 
             Console.WriteLine("\n**** Queries over start-edge-only dataset ****");
             ProcessQuery(startEdgeOnlyDataset.Count(), "input.Count()");
@@ -98,8 +103,6 @@ namespace PerformanceTest
             ProcessQuery(startEdgeOnlyDataset.Average(e => e.field1), "input.Average(e => e.field1)");
             ProcessQuery(startEdgeOnlyDataset.Max(e => e.field1), "input.Max(e => e.field1)");
             ProcessQuery(startEdgeOnlyDataset.Min(e => e.field1), "input.Min(e => e.field1)");
-            //ProcessQuery(startEdgeOnlyDataset.Multicast(str => str.Join(str, e => e.field1, e => e.field1, (l, r) => l)), "Self-Join");
-
 
             Console.WriteLine("\n**** Queries over a single-snapshot (atemporal) dataset ****");
             ProcessQuery(singleSnapshotDataset.Count(), "input.Count()");
@@ -134,7 +137,5 @@ namespace PerformanceTest
                 }
             }
         }
-
-
     }
 }

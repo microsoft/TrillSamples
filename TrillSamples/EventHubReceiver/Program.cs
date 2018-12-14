@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.EventHubs.Processor;
-using Microsoft.WindowsAzure.Storage;
 
 namespace EventHubReceiver
 {
-    class Program
+    public sealed class Program
     {
         private const string EventHubConnectionString = "<fill>";
         private const string EventHubName = "<fill>";
@@ -16,7 +17,8 @@ namespace EventHubReceiver
         private const string StorageAccountName = "<fill>";
         private const string StorageAccountKey = "<fill>";
 
-        internal static readonly string StorageConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", StorageAccountName, StorageAccountKey);
+        internal static readonly string StorageConnectionString =
+            $"DefaultEndpointsProtocol=https;AccountName={StorageAccountName};AccountKey={StorageAccountKey}";
 
         public static void Main(string[] args)
         {

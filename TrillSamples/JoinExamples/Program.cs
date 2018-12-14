@@ -1,27 +1,27 @@
-﻿namespace JoinExamples
+﻿// *********************************************************************
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License
+// *********************************************************************
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reflection;
+using Microsoft.StreamProcessing;
+
+namespace JoinExamples
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reactive.Linq;
-    using System.Reflection;
 
-    using Microsoft.StreamProcessing;
-    using System.Linq.Expressions;
-
-    public class Program
+    public sealed class Program
     {
         public struct Session
         {
             public int id;
             public int type;
 
-            public override string ToString()
-            {
-                return " {id:" + id + ", type:" + type + "}";
-            }
+            public override string ToString() => $" {{id:{this.id}, type:{this.type}}}";
         }
 
         private static readonly StreamEvent<Session>[] sessions1 =
@@ -50,18 +50,23 @@
         [DisplayName("CrossJoinExample")]
         private static void CrossJoinExample()
         {
-            var input1 = sessions1.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input1 = sessions1.ToObservable().ToStreamable();
             Console.WriteLine("Input1 =");
             input1.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            var input2 = sessions2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input2 = sessions2.ToObservable().ToStreamable();
             Console.WriteLine("Input2 =");
             input2.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Corss join and generate anonymous type objects.
             Console.WriteLine();
-            Console.WriteLine("Query: input.Join(input2, (left, right) => new { ID1 = left.id, Type1 = left.type, ID2 = right.id, Type2 = right.type })");
-            var output = input1.Join(input2, (left, right) => new { ID1 = left.id, Type1 = left.type, ID2 = right.id, Type2 = right.type });
+            Console.WriteLine("Query:");
+            Console.WriteLine("    input1.Join(");
+            Console.WriteLine("        input2,");
+            Console.WriteLine("        (left, right) => new { ID1 = left.id, Type1 = left.type, ID2 = right.id, Type2 = right.type })");
+            var output = input1.Join(
+                input2,
+                (left, right) => new { ID1 = left.id, Type1 = left.type, ID2 = right.id, Type2 = right.type });
 
             Console.WriteLine();
             Console.WriteLine("Output =");
@@ -71,18 +76,26 @@
         [DisplayName("EquiJoinExample")]
         private static void EquiJoinExample()
         {
-            var input1 = sessions1.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input1 = sessions1.ToObservable().ToStreamable();
             Console.WriteLine("Input1 =");
             input1.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            var input2 = sessions2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input2 = sessions2.ToObservable().ToStreamable();
             Console.WriteLine("Input2 =");
             input2.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Equi join on the id field and generate anonymous type objects.
             Console.WriteLine();
-            Console.WriteLine("Query: input.Join(input2, w => w.id, w => w.id, (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type })");
-            var output = input1.Join(input2, w => w.id, w => w.id,
+            Console.WriteLine("Query:");
+            Console.WriteLine("    input1.Join(");
+            Console.WriteLine("        input2,");
+            Console.WriteLine("        w => w.id,");
+            Console.WriteLine("        w => w.id,");
+            Console.WriteLine("        (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type })");
+            var output = input1.Join(
+                input2,
+                w => w.id,
+                w => w.id,
                 (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type });
 
             Console.WriteLine();
@@ -93,11 +106,11 @@
         [DisplayName("AntiJoinExample")]
         private static void AntiJoinExample()
         {
-            var input1 = sessions1.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input1 = sessions1.ToObservable().ToStreamable();
             Console.WriteLine("Input1 =");
             input1.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            var input2 = sessions2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input2 = sessions2.ToObservable().ToStreamable();
             Console.WriteLine("Input2 =");
             input2.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
@@ -114,19 +127,28 @@
         [DisplayName("OuterJoinExample")]
         private static void OuterJoinExample()
         {
-            var input1 = sessions1.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input1 = sessions1.ToObservable().ToStreamable();
             Console.WriteLine("Input1 =");
             input1.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
-            var input2 = sessions2.ToObservable().ToStreamable(OnCompletedPolicy.None());
+            var input2 = sessions2.ToObservable().ToStreamable();
             Console.WriteLine("Input2 =");
             input2.ToStreamEventObservable().ForEachAsync(e => Console.WriteLine(e)).Wait();
 
             // Left outer join.
             Console.WriteLine();
-            Console.WriteLine("Query: input.LeftOuterJoin(input1, w => w.id, w => w.id, w => new { ID = w.id, Type1 = w.type, Type2 = 0 }, (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type })");
-            var output = input2.LeftOuterJoin(input1, w => w.id, w => w.id, 
-                w => new { ID = w.id, Type1 = w.type, Type2 = 0 }, 
+            Console.WriteLine("Query:");
+            Console.WriteLine("    input.LeftOuterJoin(");
+            Console.WriteLine("        input1,");
+            Console.WriteLine("        w => w.id,");
+            Console.WriteLine("        w => w.id,");
+            Console.WriteLine("        w => new { ID = w.id, Type1 = w.type, Type2 = 0 }, ");
+            Console.WriteLine("        (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type })");
+            var output = input2.LeftOuterJoin(
+                input1,
+                w => w.id,
+                w => w.id,
+                w => new { ID = w.id, Type1 = w.type, Type2 = 0 },
                 (left, right) => new { ID = left.id, Type1 = left.type, Type2 = right.type });
 
             Console.WriteLine();
@@ -137,13 +159,12 @@
         private struct Function
         {
             public readonly MethodInfo Method;
-
             public readonly string Name;
 
             public Function(MethodInfo method, string name)
             {
-                Method = method;
-                Name = name;
+                this.Method = method;
+                this.Name = name;
             }
         }
 
@@ -164,7 +185,7 @@
             return functions.ToArray();
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var demos = GetFunctions();
 
@@ -174,7 +195,7 @@
                 Console.WriteLine("Pick an action:");
                 for (int demo = 0; demo < demos.Length; demo++)
                 {
-                    Console.WriteLine("{0,4} - {1}", demo, demos[demo].Name);
+                    Console.WriteLine($"{demo, 4} - {demos[demo].Name}");
                 }
 
                 Console.WriteLine("Exit - Exit from Demo.");
@@ -186,12 +207,12 @@
                 }
 
                 int demoToRun;
-                if (int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun) == false)
+                if (!int.TryParse(response, NumberStyles.Integer, CultureInfo.InvariantCulture, out demoToRun))
                 {
                     demoToRun = -1;
                 }
 
-                if (0 <= demoToRun && demoToRun < demos.Length)
+                if (demoToRun >= 0 && demoToRun < demos.Length)
                 {
                     Console.WriteLine();
                     Console.WriteLine(demos[demoToRun].Name);
