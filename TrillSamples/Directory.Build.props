@@ -16,5 +16,10 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+  
+  <!-- Every sample includes Trill -->
+  <ItemGroup>
+    <PackageReference Include="Trill" Version="2019.5.1.1" />
+  </ItemGroup>
 
 </Project>

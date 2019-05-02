@@ -5,8 +5,4 @@
     <TargetFramework>net461</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Trill" Version="2019.1.7.2" />
-  </ItemGroup>
-
 </Project>
