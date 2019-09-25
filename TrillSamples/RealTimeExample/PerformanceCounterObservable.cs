@@ -77,7 +77,7 @@ namespace RealTimeExample
                 {
                     if (!this.isDisposed)
                     {
-                        var startTime = DateTime.UtcNow;
+                        var startTime = DateTime.Now;
                         CounterSample currentSample = this.counter.NextSample();
                         float value = CounterSample.Calculate(this.previousSample, currentSample);
                         this.observer.OnNext(new PerformanceCounterSample { StartTime = startTime, Value = value });

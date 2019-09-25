@@ -34,12 +34,31 @@ namespace RealTimeExample
                     FlushPolicy.FlushOnPunctuation,
                     PeriodicPunctuationPolicy.Time((ulong)TimeSpan.FromSeconds(1).Ticks));
 
-            // The query
+            // Query 1: Aggregate query
             long windowSize = TimeSpan.FromSeconds(2).Ticks;
-            var query = inputStream.AlterEventDuration(windowSize).Average(e => e.Value);
+            var query1 = inputStream.TumblingWindowLifetime(windowSize).Average(e => e.Value);
+
+            // Query 2: look for pattern of [CPU < 10] --> [CPU >= 10]
+            var query2 = inputStream
+                .AlterEventDuration(TimeSpan.FromSeconds(10).Ticks)
+                .Detect(default(Tuple<float, float>), // register to store CPU value
+                    p => p
+                    .SingleElement(e => e.Value < 10, (ts, ev, reg) => new Tuple<float, float>(ev.Value, 0))
+                    .SingleElement(e => e.Value >= 10, (ts, ev, reg) => new Tuple<float, float>(reg.Item1, ev.Value)));
+
+            // Query 3: look for pattern of [k increasing CPU values --> drop CPU], report max, k
+            int k = 2;
+            var query3 = inputStream
+                .AlterEventDuration(TimeSpan.FromSeconds(10).Ticks)
+                .Detect(default(Tuple<float, int>), // register to store CPU value, incr count
+                    p => p
+                    .KleenePlus(e =>
+                    e.SingleElement((ev, reg) => reg == null || ev.Value > reg.Item1, (ts, ev, reg) => new Tuple<float, int>(ev.Value, reg == null ? 1 : reg.Item2 + 1)))
+                    .SingleElement((ev, reg) => ev.Value < reg.Item1 && reg.Item2 > k, (ts, ev, reg) => reg),
+                    allowOverlappingInstances: false);
 
             // Egress results and write to console
-            query.ToStreamEventObservable().ForEachAsync(e => WriteEvent(e)).Wait();
+            query3.ToStreamEventObservable().ForEachAsync(e => WriteEvent(e)).Wait();
         }
 
         private static void WriteEvent<T>(StreamEvent<T> e)
@@ -47,12 +66,13 @@ namespace RealTimeExample
             if (e.IsData)
             {
                 Console.WriteLine($"EventKind = {e.Kind, 8}\t" +
-                    $"StartTime = {e.StartTime, 4}\tEndTime = {e.EndTime, 20}\t" +
+                    $"StartTime = {new DateTime(e.StartTime)}\t" +
+                    // "EndTime = {new DateTime(e.EndTime)}\t" +
                     $"Payload = ( {e.Payload.ToString()} )");
             }
             else // IsPunctuation
             {
-                Console.WriteLine($"EventKind = {e.Kind}\tSyncTime  = {e.StartTime, 4}");
+                Console.WriteLine($"EventKind = {e.Kind}\tSyncTime  = {new DateTime(e.StartTime)}");
             }
         }
     }

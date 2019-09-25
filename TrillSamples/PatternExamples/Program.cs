@@ -213,14 +213,14 @@ namespace PatternExamples
         private static void GeneralAfaSamples()
         {
             #region Pattern 1: A followed immediately by B: AB
-            var pat1 = new Afa<Payload, Empty>();
+            var pat1 = new Afa<Payload, Empty, bool>();
             pat1.AddSingleElementArc(0, 1, (ts, ev, reg) => ev.Field1 == "A");
             pat1.AddSingleElementArc(1, 2, (ts, ev, reg) => ev.Field1 == "B");
             RunPatternQuery("Pattern 1: A followed immediately by B: AB", pat1, source);
             #endregion
 
             #region Pattern 2: A followed by B (with events in between): A(.*)B
-            var pat2 = new Afa<Payload, Empty>();
+            var pat2 = new Afa<Payload, Empty, bool>();
             pat2.AddSingleElementArc(0, 1, (ts, ev, reg) => ev.Field1 == "A");
             pat2.AddSingleElementArc(1, 1, (ts, ev, reg) => true);
             pat2.AddSingleElementArc(1, 2, (ts, ev, reg) => ev.Field1 == "B");
@@ -228,7 +228,7 @@ namespace PatternExamples
             #endregion
 
             #region Pattern 3: A followed by first occurrence of B within 100 time units
-            var pat3 = new Afa<Payload, long>();
+            var pat3 = new Afa<Payload, long, bool>();
             pat3.AddSingleElementArc(0, 1, (ts, ev, reg) => ev.Field1 == "A", (ts, ev, reg) => ts);
             pat3.AddSingleElementArc(1, 1, (ts, ev, reg) => ev.Field1 != "B" && ts < reg + 100);
             pat3.AddSingleElementArc(1, 2, (ts, ev, reg) => ev.Field1 == "B" && ts < reg + 100);
@@ -236,7 +236,7 @@ namespace PatternExamples
             #endregion
 
             #region Pattern 4: A followed by no occurrences of B within 20 time units
-            var pat4 = new Afa<Payload, long>();
+            var pat4 = new Afa<Payload, long, bool>();
             pat4.AddSingleElementArc(0, 1, (ts, ev, reg) => ev.Field1 == "A", (ts, ev, reg) => ts);
             pat4.AddSingleElementArc(1, 1, (ts, ev, reg) => ev.Field1 != "B" && ts < reg + 20);
             pat4.AddSingleElementArc(1, 2, (ts, ev, reg) => ts >= reg + 20);
@@ -244,7 +244,7 @@ namespace PatternExamples
             #endregion
 
             #region Pattern 5: Sequence of A's followed by sequence of B's of same number
-            var pat5 = new Afa<Payload, int>();
+            var pat5 = new Afa<Payload, int, bool>();
             pat5.AddSingleElementArc(0, 0, (ts, ev, reg) => ev.Field1 == "A", (ts, ev, reg) => reg + 1);
             pat5.AddSingleElementArc(0, 1, (ts, ev, reg) => ev.Field1 == "A", (ts, ev, reg) => reg + 1);
             pat5.AddSingleElementArc(1, 1, (ts, ev, reg) => ev.Field1 == "B" && reg > 1, (ts, ev, reg) => reg - 1);
@@ -276,7 +276,7 @@ namespace PatternExamples
                 .ForEachAsync(x => Console.WriteLine("Time: {0} Payload: {1}", x.StartTime, x.Payload)).Wait();
             Console.WriteLine();
         }
-        private static void RunPatternQueryGrouped<TP, TR, TK>(string name, Afa<TP, TR> afa, IStreamable<Empty, TP> source, Expression<Func<TP, TK>> groupingKey)
+        private static void RunPatternQueryGrouped<TP, TR, TA, TK>(string name, Afa<TP, TR, TA> afa, IStreamable<Empty, TP> source, Expression<Func<TP, TK>> groupingKey)
         {
             Console.WriteLine("[Grouped] " + name);
             Console.WriteLine("Result: ");
